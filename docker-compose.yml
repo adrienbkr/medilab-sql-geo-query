@@ -1,0 +1,26 @@
+# ./docker-compose.yml
+
+version: '3'
+
+services:
+  database:
+    image: mysql:5.7
+    container_name: database
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: meditect
+      MYSQL_USER: meditect
+      MYSQL_PASSWORD: meditect
+    ports:
+      - "9906:3306"
+  web:
+    build: .
+    container_name: php_web
+    depends_on:
+      - database
+    volumes:
+      - ./php/:/var/www/html/
+    ports:
+      - "8100:80"
+    stdin_open: true
+    tty: true
