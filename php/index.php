@@ -144,7 +144,7 @@
   }
 
   #mapid {
-    height: 50vh
+    height: 100vh
   }
 </style>
 <!-- leaflet -->
