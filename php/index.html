@@ -1,0 +1,265 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @keyframes load {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    margin: 0
+  }
+
+  #mapid {
+    height: 100vh
+  }
+
+  #app {
+    position: fixed;
+    z-index: 5000;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+  }
+
+  #app>span {
+    display: inline-block;
+    white-space: nowrap;
+    margin: 1em;
+  }
+
+  .loader {
+    text-align: center;
+    animation: load 1s infinite;
+  }
+
+  .loader:before {
+    content: "";
+    display: inline-block;
+    background-color: white;
+    height: 0.25em;
+    width: 80%;
+    opacity: 0.9;
+  }
+
+  @media screen and (max-width: 640px) {
+    #app>span {
+      display: block;
+    }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<!-- leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+  integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+  crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+  crossorigin=""></script>
+<!-- clusters -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"
+  crossorigin="" />
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js" crossorigin=""></script>
+
+<!-- axios -->
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+</blockquote>
+
+<body>
+  <div id="mapid"></div>
+  <div id="app">
+    <div class="loader" v-if="loading"></div>
+    <span>
+      user_type
+      <select v-model="user_type">
+        <option value="">all</option>
+        <option value="pharmacy">pharmacy</option>
+        <option value="patient">patient</option>
+        <option value="operator">operator</option>
+      </select>
+    </span>
+    <span>
+      legit
+      <select v-model="legit">
+        <option value="">all</option>
+        <option value="0">false</option>
+        <option value="1">true</option>
+      </select>
+    </span>
+    <span>
+      company_name
+      <select v-model="company_name">
+        <option value="">all</option>
+        <option value="upsa">upsa</option>
+        <option value="biogaran">biogaran</option>
+        <option value="meditect">meditect</option>
+      </select>
+    </span>
+    <span>
+      item_name
+      <select v-model="item_name">
+        <option value="">all</option>
+        <option value="efferalgan">efferalgan</option>
+        <option value="doliprane">doliprane</option>
+        <option value="vitamine">vitamine</option>
+      </select>
+    </span>
+  </div>
+</body>
+
+<script>
+
+  // LEAFLET
+
+  var markers = [];
+  var mymap = L.map('mapid').setView([8.5, -3.5], 8);
+  L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+    maxZoom: 18,
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+      '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+      'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    id: 'mapbox/streets-v11',
+    tileSize: 512,
+    zoomOffset: -1
+  }).addTo(mymap);
+
+  const markerClusterGroup = L.markerClusterGroup();
+
+  // VUE
+
+  new Vue({
+    el: '#app',
+    data: {
+      loading: false,
+      markers: [],
+      sections: [],
+      init: false,
+      user_type: "pharmacy",
+      legit: "1",
+      company_name: "upsa",
+      item_name: "efferalgan",
+      from: "2005-04-20",
+      to: "2015-04-20",
+      no_polygon: false
+    },
+    mounted() {
+      this.renderCluster();
+      this.getMarkers()
+    },
+    watch: {
+      markers() {
+        this.renderCluster()
+      },
+      sections() {
+        this.renderSections()
+      },
+      params() {
+        this.clearCluster()
+        this.getMarkers()
+      }
+    },
+    computed: {
+      params() {
+        return {
+          user_type: this.user_type,
+          legit: this.legit,
+          company_name: this.company_name,
+          item_name: this.item_name,
+          from: this.from,
+          to: this.to,
+          no_polygon: this.no_polygon
+        }
+      }
+    },
+    methods: {
+      clearCluster() {
+        markerClusterGroup.clearLayers()
+      },
+      renderCluster() {
+        if (!this.markers) return
+        markerClusterGroup.clearLayers()
+        this.markers.forEach(marker => {
+          const m = L.marker(JSON.parse(marker.geojson).coordinates)
+          m.bindPopup(`
+            <table>
+              <tr>
+                <td><small>createdAt:</small></td>
+                <td><b>${marker.createdAt}</b></td>
+              </tr>
+              <tr>
+                <td><small>user_name:</small></td>
+                <td><b>${marker.user_name}</b></td>
+              </tr>
+              <tr>
+                <td><small>user_type:</small></td>
+                <td><b>${marker.user_type}</b></td>
+              </tr>
+              <tr>
+                <td><small>legit:</small></td>
+                <td><b>${marker.legit == 0 ? "true" : "false"}</b></td>
+              </tr>
+              <tr>
+                <td><small>company_name:</small></td>
+                <td><b>${marker.company_name}</b></td>
+              </tr>
+              <tr>
+                <td><small>item_name:</small></td>
+                <td><b>${marker.item_name}</b></td>
+              </tr>
+            </table>
+          `)
+          markerClusterGroup.addLayer(m);
+        })
+        mymap.addLayer(markerClusterGroup);
+        this.loading = false
+      },
+      renderSections() {
+        if (!this.sections || this.init) return
+        const geojson = {
+          type: "Section",
+          features: []
+        };
+
+        this.sections.forEach(section => {
+          const sectionGeo = JSON.parse(section.geojson)
+          sectionGeo.coordinates[0].forEach((coord, index) => {
+            const coordTmp = [...coord]
+            sectionGeo.coordinates[0][index][0] = coordTmp[1]
+            sectionGeo.coordinates[0][index][1] = coordTmp[0]
+          })
+          geojson.features.push(sectionGeo)
+        })
+
+        L.geoJSON(geojson).addTo(mymap);
+        this.init = true
+      },
+      getMarkers() {
+        this.loading = true
+        axios.get('/api.php', {
+          params: this.params
+        })
+          .then(response => {
+            this.markers = response.data.scans
+            this.sections = response.data.sections
+          })
+          .catch(function (error) {
+            // handle error
+          })
+          .then(function () {
+            // always executed
+          });
+      }
+    }
+  })
+</script>
