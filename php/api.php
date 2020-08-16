@@ -94,68 +94,127 @@ try {
   $readSections->execute();
   $rowsSections = $readSections->fetchAll(PDO::FETCH_OBJ);
 
-  // $read = $db->prepare("SELECT ST_AsGeojson(point) AS geojson, ST_Distance(point, POINT(0, 0)) AS dist_meter from scans");
-  if (isset($_GET["no_polygon"]) && $_GET["no_polygon"] == "false") {
-    $read = $db->prepare("
-      SELECT
-        createdAt,
-        legit,
-        users.name AS user_name,
-        users.type AS user_type,
-        company.name AS company_name,
-        item.name AS item_name,
-        ST_AsGeojson(point) AS geojson
-      FROM scans
-      LEFT JOIN company ON scans.companyId = company.id
-      LEFT JOIN users ON scans.userId = users.id
-      LEFT JOIN item ON scans.itemId = item.id
-      WHERE ST_CONTAINS(ST_GEOMFROMTEXT('".$rowsSections[1]->polygon."'), point)
-        ".(isset($_GET["legit"]) && $_GET["legit"] != "" ? '' : '# ')." AND scans.legit = :legit
-        ".(isset($_GET["company_name"]) && $_GET["company_name"] != "" ? '' : '# ')." AND company.name = :company_name
-        ".(isset($_GET["user_type"]) && $_GET["user_type"] != "" ? '' : '# ')." AND users.type = :user_type
-        ".(isset($_GET["item_name"]) && $_GET["item_name"] != "" ? '' : '# ')." AND item.name = :item_name
-        # AND scans.createdAt BETWEEN :from AND :to
-      LIMIT 25000
-    ");
-  } else {
-    $read = $db->prepare("
+  switch ($_GET["route"]) {
+
+    case "sections":
+      $metric = isset($_GET["metric"]) ? $_GET["metric"] : "scans.legit";
+      $readMetrics = $db->prepare("
         SELECT
-        ST_AsGeojson(point) AS geojson
+          count(scans.id) as sum,
+          ". $metric ." as value
         FROM scans
+        LEFT JOIN company ON scans.companyId = company.id
+        LEFT JOIN users ON scans.userId = users.id
+        LEFT JOIN item ON scans.itemId = item.id
+        WHERE ST_CONTAINS(ST_GEOMFROMTEXT('" . $rowsSections[1]->polygon . "'), point)
+        " . (isset($_GET["legit"]) && $_GET["legit"] != "" ? '' : '# ') . " AND scans.legit = :legit
+        " . (isset($_GET["company_name"]) && $_GET["company_name"] != "" ? '' : '# ') . " AND company.name = :company_name
+        " . (isset($_GET["user_type"]) && $_GET["user_type"] != "" ? '' : '# ') . " AND users.type = :user_type
+        " . (isset($_GET["item_name"]) && $_GET["item_name"] != "" ? '' : '# ') . " AND item.name = :item_name
+        # AND scans.createdAt BETWEEN :from AND :to
+        GROUP BY ". $metric ."
+      ");
+
+      // DEBUG
+      // print_r($readMetrics);
+      // return;
+
+      $legit = isset($_GET["legit"]) ? $_GET["legit"] : true;
+      $company_name = isset($_GET["company_name"]) ? $_GET["company_name"] : "upsa";
+      $user_type = isset($_GET["user_type"]) ? $_GET["user_type"] : "patient";
+      $item_name = isset($_GET["item_name"]) ? $_GET["item_name"] : "doliprane";
+      $from = isset($_GET["from"]) ? $_GET["from"] : "2005-04-20";
+      $to = isset($_GET["to"]) ? $_GET["to"] : "2015-04-20";
+
+      $readMetrics->bindParam(":legit", $legit);
+      $readMetrics->bindParam(":company_name", $company_name);
+      $readMetrics->bindParam(":user_type", $user_type);
+      $readMetrics->bindParam(":item_name", $item_name);
+      $readMetrics->bindParam(":from", $from);
+      $readMetrics->bindParam(":to", $to);
+
+      $readMetrics->execute();
+      $rowsMetrics = $readMetrics->fetchAll(PDO::FETCH_OBJ);
+      
+      echo json_encode([
+        "metrics" => isset($rowsMetrics) ? $rowsMetrics : [],
+        "sections" => isset($rowsSections) ? $rowsSections : []
+      ]);
+      break;
+
+    case "scans":
+      // $read = $db->prepare("SELECT ST_AsGeojson(point) AS geojson, ST_Distance(point, POINT(0, 0)) AS dist_meter from scans");
+      if (isset($_GET["no_polygon"]) && $_GET["no_polygon"] == "false") {
+        $read = $db->prepare("
+        SELECT
+          createdAt,
+          legit,
+          users.name AS user_name,
+          users.type AS user_type,
+          company.name AS company_name,
+          item.name AS item_name,
+          ST_AsGeojson(point) AS geojson
+        FROM scans
+        LEFT JOIN company ON scans.companyId = company.id
+        LEFT JOIN users ON scans.userId = users.id
+        LEFT JOIN item ON scans.itemId = item.id
+        WHERE ST_CONTAINS(ST_GEOMFROMTEXT('" . $rowsSections[1]->polygon . "'), point)
+          " . (isset($_GET["legit"]) && $_GET["legit"] != "" ? '' : '# ') . " AND scans.legit = :legit
+          " . (isset($_GET["company_name"]) && $_GET["company_name"] != "" ? '' : '# ') . " AND company.name = :company_name
+          " . (isset($_GET["user_type"]) && $_GET["user_type"] != "" ? '' : '# ') . " AND users.type = :user_type
+          " . (isset($_GET["item_name"]) && $_GET["item_name"] != "" ? '' : '# ') . " AND item.name = :item_name
+          # AND scans.createdAt BETWEEN :from AND :to
         LIMIT 25000
       ");
+      } else {
+        $read = $db->prepare("
+          SELECT
+            createdAt,
+            legit,
+            users.name AS user_name,
+            users.type AS user_type,
+            company.name AS company_name,
+            item.name AS item_name,
+            ST_AsGeojson(point) AS geojson
+          FROM scans
+          LEFT JOIN company ON scans.companyId = company.id
+          LEFT JOIN users ON scans.userId = users.id
+          LEFT JOIN item ON scans.itemId = item.id
+          LIMIT 25000
+        ");
+      }
+      // $read = $db->prepare("SELECT ST_AsGeojson(point) AS geojson, ROUND(ST_Distance_Sphere(point, POINT(45, 0))) / 1000 AS dist FROM scans WHERE ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((44 -1, 44 1, 46 1, 44 -1))'), point) ORDER BY dist");
+      // $read = $db->prepare("SELECT ST_AsGeoJSON(point) as geojson from scans");
+
+      $legit = isset($_GET["legit"]) ? $_GET["legit"] : true;
+      $company_name = isset($_GET["company_name"]) ? $_GET["company_name"] : "upsa";
+      $user_type = isset($_GET["user_type"]) ? $_GET["user_type"] : "patient";
+      $item_name = isset($_GET["item_name"]) ? $_GET["item_name"] : "doliprane";
+      $from = isset($_GET["from"]) ? $_GET["from"] : "2005-04-20";
+      $to = isset($_GET["to"]) ? $_GET["to"] : "2015-04-20";
+
+      $read->bindParam(":legit", $legit);
+      $read->bindParam(":company_name", $company_name);
+      $read->bindParam(":user_type", $user_type);
+      $read->bindParam(":item_name", $item_name);
+      $read->bindParam(":from", $from);
+      $read->bindParam(":to", $to);
+
+      // print_r($polygon);
+      // return;
+
+      $read->execute();
+      $rowsScans = $read->fetchAll(PDO::FETCH_OBJ);
+
+      // DEBUG
+      // print_r($read);
+      // return
+
+      echo json_encode([
+        "scans" => isset($rowsScans) ? $rowsScans : []
+      ]);
+      break;
   }
-  // $read = $db->prepare("SELECT ST_AsGeojson(point) AS geojson, ROUND(ST_Distance_Sphere(point, POINT(45, 0))) / 1000 AS dist FROM scans WHERE ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((44 -1, 44 1, 46 1, 44 -1))'), point) ORDER BY dist");
-  // $read = $db->prepare("SELECT ST_AsGeoJSON(point) as geojson from scans");
-
-  $legit = isset($_GET["legit"]) ? $_GET["legit"] : true;
-  $company_name = isset($_GET["company_name"]) ? $_GET["company_name"] : "upsa";
-  $user_type = isset($_GET["user_type"]) ? $_GET["user_type"] : "patient";
-  $item_name = isset($_GET["item_name"]) ? $_GET["item_name"] : "doliprane";
-  $from = isset($_GET["from"]) ? $_GET["from"] : "2005-04-20";
-  $to = isset($_GET["to"]) ? $_GET["to"] : "2015-04-20";
-
-  $read->bindParam(":legit", $legit);
-  $read->bindParam(":company_name", $company_name);
-  $read->bindParam(":user_type", $user_type);
-  $read->bindParam(":item_name", $item_name);
-  $read->bindParam(":from", $from);
-  $read->bindParam(":to", $to);
-
-  // print_r($polygon);
-  // return;
-
-  $read->execute();
-  $rowsScans = $read->fetchAll(PDO::FETCH_OBJ);
-
-  // DEBUG
-  // print_r($read);
-  // return
-
-  echo json_encode([
-    "scans" => $rowsScans,
-    "sections" => $rowsSections
-  ]);
 ?>
 <?php
 

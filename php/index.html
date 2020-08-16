@@ -2,18 +2,54 @@
 <style>
   @keyframes load {
     0% {
-      transform: translateX(-100%);
+      transform: rotate(0deg) scale(1);
+      border-radius: 40%;
     }
+
+    25% {
+      transform: rotate(360deg) scale(1.6);
+      background-color: limegreen;
+      border-radius: 10%;
+    }
+
+    50% {
+      transform: rotate(720deg) scale(1);
+      border-radius: 40%;
+      background-color: dodgerblue;
+    }
+
+    75% {
+      transform: rotate(1080deg) scale(1.6);
+      background-color: darkorange;
+      border-radius: 10%;
+    }
+
     100% {
-      transform: translateX(100%);
+      transform: rotate(1440deg) scale(1);
+      border-radius: 40%;
     }
   }
+
   html {
     font-size: 16px;
   }
 
   body {
-    margin: 0
+    margin: 0;
+    font-family: sans-serif;
+  }
+
+  label {
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 0.5em;
+  }
+
+  select {
+    width: 100%;
+    padding: 0.5em 1em;
+    border-radius: 1em;
+    font-size: 1em;
   }
 
   #mapid {
@@ -23,37 +59,66 @@
   #app {
     position: fixed;
     z-index: 5000;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
+    bottom: 2em;
+    left: 50%;
+    background-color: rgb(255, 255, 255);
+    color: rgb(32, 32, 32);
+    transition: 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.6s;
+    transform: translateX(-50%) translateY(4em) scale(0.6);
+    text-align: center;
+    width: 100%;
+    max-width: 32em;
+    border-radius: 0.5em;
+    padding: 1em;
+    box-sizing: border-box;
+    perspective: 1000px;
+    font-size: 1em;
+    opacity: 0.8;
+  }
+
+  @media screen and (max-width: 640px) {
+    #app {
+      font-size: 0.75em;
+      bottom: 0;
+      border-radius: 0;
+      background-color: rgba(255, 255, 255, 0.8);
+      transform: translateX(-50%);
+      opacity: 1;
+    }
+  }
+
+  #app:hover {
+    transition: 0.3s ease;
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
   }
 
   #app>span {
     display: inline-block;
     white-space: nowrap;
-    margin: 1em;
+    text-align: left;
+    padding: 1em;
+    margin-left: -0.25em;
+    width: 50%;
+    box-sizing: border-box;
+  }
+
+  #app>span>label {
+    display: block;
   }
 
   .loader {
-    text-align: center;
-    animation: load 1s infinite;
-  }
-
-  .loader:before {
-    content: "";
-    display: inline-block;
-    background-color: white;
-    height: 0.25em;
-    width: 80%;
-    opacity: 0.9;
-  }
-
-  @media screen and (max-width: 640px) {
-    #app>span {
-      display: block;
-    }
+    top: -2em;
+    left: 50%;
+    margin-left: -0.5em;
+    font-weight: 2em;
+    position: absolute;
+    animation: load 5.6s infinite;
+    display: block;
+    background-color: rgb(32, 32, 32);
+    height: 1em;
+    width: 1em;
+    border-radius: 0;
   }
 </style>
 
@@ -79,10 +144,10 @@
 <body>
   <div id="mapid"></div>
   <div id="app">
-    <div class="loader" v-if="loading"></div>
+    <div class="loader" v-if="loading.markers || loading.sections"></div>
     <span>
-      user_type
-      <select v-model="user_type">
+      <label>user_type</label>
+      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="user_type">
         <option value="">all</option>
         <option value="pharmacy">pharmacy</option>
         <option value="patient">patient</option>
@@ -90,16 +155,16 @@
       </select>
     </span>
     <span>
-      legit
-      <select v-model="legit">
+      <label>legit</label>
+      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="legit">
         <option value="">all</option>
         <option value="0">false</option>
         <option value="1">true</option>
       </select>
     </span>
     <span>
-      company_name
-      <select v-model="company_name">
+      <label>company_name</label>
+      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="company_name">
         <option value="">all</option>
         <option value="upsa">upsa</option>
         <option value="biogaran">biogaran</option>
@@ -107,12 +172,28 @@
       </select>
     </span>
     <span>
-      item_name
-      <select v-model="item_name">
+      <label>item_name</label>
+      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="item_name">
         <option value="">all</option>
         <option value="efferalgan">efferalgan</option>
         <option value="doliprane">doliprane</option>
         <option value="vitamine">vitamine</option>
+      </select>
+    </span>
+    <span>
+      <label>metric</label>
+      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="metric">
+        <option value="scans.legit">scans.legit</option>
+        <option value="item.name">item.name</option>
+        <option value="company.name">company.name</option>
+        <option value="users.type">users.type</option>
+      </select>
+    </span>
+    <span>
+      <label>geo filter</label>
+      <select v-bind:disabled="loading.markers == true" v-model="no_polygon">
+        <option value="true">no geo filter</option>
+        <option value="false">filter by polygon</option>
       </select>
     </span>
   </div>
@@ -123,7 +204,7 @@
   // LEAFLET
 
   var markers = [];
-  var mymap = L.map('mapid').setView([8.5, -3.5], 8);
+  var mymap = L.map('mapid').setView([8.5, -3.5], 6);
   L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
     maxZoom: 18,
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
@@ -132,41 +213,78 @@
     id: 'mapbox/streets-v11',
     tileSize: 512,
     zoomOffset: -1
-  }).addTo(mymap);
+  })
+    .addTo(mymap);
 
   const markerClusterGroup = L.markerClusterGroup();
+  const sectionLayer = L.geoJSON();
 
   // VUE
 
   new Vue({
     el: '#app',
     data: {
-      loading: false,
+      loading: {
+        markers: false,
+        sections: false
+      },
+      isVisible: {
+        markers: false,
+        sections: false
+      },
       markers: [],
       sections: [],
+      metrics: [],
       init: false,
-      user_type: "pharmacy",
-      legit: "1",
-      company_name: "upsa",
-      item_name: "efferalgan",
+      user_type: "",
+      legit: "",
+      company_name: "",
+      item_name: "",
       from: "2005-04-20",
       to: "2015-04-20",
-      no_polygon: false
+      no_polygon: "false",
+      metric: "users.type",
+      zoom: null
     },
-    mounted() {
-      this.renderCluster();
-      this.getMarkers()
+    beforeMount() {
+      this.getSections();
+      this.getMarkers();
+      mymap.on('zoomend', this.onZoomend)
+      this.zoom = mymap.getZoom()
     },
     watch: {
+      zoom() {
+        console.log(this.zoom);
+        if (this.no_polygon == "true" || this.zoom > 8) {
+          if (!this.isVisible.clusters) this.renderCluster()
+        } else {
+          this.clearClusters()
+        }
+      },
       markers() {
-        this.renderCluster()
+        this.loading.markers = false
+        if (this.no_polygon == "true" || this.zoom > 8) {
+          if (!this.isVisible.clusters) this.renderCluster()
+        } else {
+          this.clearClusters()
+        }
       },
       sections() {
-        this.renderSections()
+        this.loading.sections = false
+        if (this.no_polygon == "false")
+          this.renderSections()
       },
       params() {
-        this.clearCluster()
+        this.getSections();
         this.getMarkers()
+      },
+      no_polygon() {
+        console.log(this.no_polygon);
+        if (this.no_polygon == "false") {
+          this.renderSections()
+        } else {
+          this.clearSections()
+        }
       }
     },
     computed: {
@@ -178,17 +296,25 @@
           item_name: this.item_name,
           from: this.from,
           to: this.to,
-          no_polygon: this.no_polygon
+          no_polygon: this.no_polygon,
+          metric: this.metric
         }
       }
     },
     methods: {
-      clearCluster() {
+      onZoomend() {
+        this.zoom = mymap.getZoom()
+      },
+      clearClusters() {
+        console.log('clearClusters', markerClusterGroup);
         markerClusterGroup.clearLayers()
+        this.isVisible.clusters = false
       },
       renderCluster() {
+        console.log('renderCluster');
         if (!this.markers) return
-        markerClusterGroup.clearLayers()
+        this.loading.markers = true
+        this.clearClusters()
         this.markers.forEach(marker => {
           const m = L.marker(JSON.parse(marker.geojson).coordinates)
           m.bindPopup(`
@@ -222,43 +348,61 @@
           markerClusterGroup.addLayer(m);
         })
         mymap.addLayer(markerClusterGroup);
-        this.loading = false
+        this.isVisible.clusters = true
+        this.loading.markers = false
+      },
+      clearSections() {
+        console.log('clearSections');
+        sectionLayer.closePopup()
+        sectionLayer.clearLayers()
+        this.isVisible.sections = false
       },
       renderSections() {
-        if (!this.sections || this.init) return
+        console.log('renderSections');
+        if (!this.sections) return
+        this.clearSections()
         const geojson = {
           type: "Section",
-          features: []
+          features: [],
+          properties: { sections: this.sections }
         };
 
-        this.sections.forEach(section => {
-          const sectionGeo = JSON.parse(section.geojson)
-          sectionGeo.coordinates[0].forEach((coord, index) => {
-            const coordTmp = [...coord]
-            sectionGeo.coordinates[0][index][0] = coordTmp[1]
-            sectionGeo.coordinates[0][index][1] = coordTmp[0]
-          })
-          geojson.features.push(sectionGeo)
+        const sectionGeo = JSON.parse(this.sections[1].geojson)
+        console.log(sectionGeo);
+        sectionGeo.coordinates[0].forEach((coord, index) => {
+          const coordTmp = [...coord]
+          sectionGeo.coordinates[0][index][0] = coordTmp[1]
+          sectionGeo.coordinates[0][index][1] = coordTmp[0]
         })
+        geojson.features.push(sectionGeo)
 
-        L.geoJSON(geojson).addTo(mymap);
-        this.init = true
+        sectionLayer.addData(geojson);
+        sectionLayer.bindPopup(() => `
+          <small>metric by</small><br>
+          <b>${ this.metric}</b><br>
+          ${this.metrics.map(m => `${Math.round(m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0) * 100)}% ${m.value} <small>(${m.sum})</small>`).join('<br>')}
+        `)
+        sectionLayer.addTo(mymap)
+        sectionLayer.openPopup()
+        this.isVisible.sections = true
       },
-      getMarkers() {
-        this.loading = true
-        axios.get('/api.php', {
-          params: this.params
-        })
+      getSections() {
+        console.log('getSections');
+        this.loading.sections = true
+        axios
+          .get('/api.php', { params: { route: "sections", ...this.params } })
           .then(response => {
-            this.markers = response.data.scans
+            this.metrics = response.data.metrics
             this.sections = response.data.sections
           })
-          .catch(function (error) {
-            // handle error
-          })
-          .then(function () {
-            // always executed
-          });
+          .catch(console.warn)
+      },
+      getMarkers() {
+        console.log('getMarkers');
+        this.loading.markers = true
+        axios.get('/api.php', { params: { route: "scans", ...this.params } })
+          .then(response => { this.markers = response.data.scans })
+          .catch(console.warn)
       }
     }
   })
