@@ -48,7 +48,7 @@
   select {
     width: 100%;
     padding: 0.5em 1em;
-    border-radius: 1em;
+    border-radius: 0.5em;
     font-size: 1em;
   }
 
@@ -74,7 +74,7 @@
     font-size: 1.2em;
     position: relative;
     display: block;
-    padding-left: 0.4em;
+    padding-left: 8px;
   }
 
   #mapid .metrics>div>div>span,
@@ -84,9 +84,12 @@
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 0.2em;
+    width: 4px;
+    font-size: 1.2em;
     background-color: #ddd;
     z-index: 1;
+    border-radius: 4px;
+    box-sizing: border-box;
   }
 
   #mapid .metrics>div>div:after {
@@ -126,13 +129,14 @@
     transform: translateX(-50%) translateY(4em) scale(0.6);
     text-align: center;
     width: 100%;
-    max-width: 32em;
+    max-width: 36em;
     border-radius: 0.5em;
-    padding: 1em;
+    padding: 1em 2em;
     box-sizing: border-box;
     perspective: 1000px;
     font-size: 1em;
     opacity: 0.8;
+    box-shadow: 0 0.5em 0.5em 0em rgba(32, 32, 32, 0.2);
   }
 
   @media screen and (max-width: 640px) {
@@ -150,6 +154,7 @@
     transition: 0.3s ease;
     transform: translateX(-50%) translateY(0) scale(1);
     opacity: 1;
+    box-shadow: 0 2em 1em -1em rgba(32, 32, 32, 0.2);
   }
 
   #app>span {
