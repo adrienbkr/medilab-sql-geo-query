@@ -56,6 +56,65 @@
     height: 100vh
   }
 
+  #mapid .metrics:after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+
+  #mapid .metrics>div {
+    float: left;
+    text-align: center;
+    width: 33%;
+    box-sizing: border-box;
+    padding: 0.25em;
+  }
+
+  #mapid .metrics>div>div {
+    font-size: 1.2em;
+    position: relative;
+    display: block;
+    padding-left: 0.4em;
+  }
+
+  #mapid .metrics>div>div>span,
+  #mapid .metrics>div>div:after {
+    content: "";
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0.2em;
+    background-color: #ddd;
+    z-index: 1;
+  }
+
+  #mapid .metrics>div>div:after {
+    height: 100%;
+  }
+
+  #mapid .metrics>div>div>span {
+    background: black;
+    z-index: 2;
+  }
+
+  #mapid .leaflet-popup-content {
+    width: 100vw;
+    max-width: 16em;
+  }
+
+  #mapid .leaflet-popup-content:after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+
+  #mapid .leaflet-popup-content p {
+    margin: 0.25em 0;
+    float: left;
+    width: 50%;
+  }
+
   #app {
     position: fixed;
     z-index: 5000;
@@ -111,7 +170,7 @@
     top: -2em;
     left: 50%;
     margin-left: -0.5em;
-    font-weight: 2em;
+    font-size: 2em;
     position: absolute;
     animation: load 5.6s infinite;
     display: block;
@@ -318,32 +377,32 @@
         this.markers.forEach(marker => {
           const m = L.marker(JSON.parse(marker.geojson).coordinates)
           m.bindPopup(`
-            <table>
-              <tr>
-                <td><small>createdAt:</small></td>
-                <td><b>${marker.createdAt}</b></td>
-              </tr>
-              <tr>
-                <td><small>user_name:</small></td>
-                <td><b>${marker.user_name}</b></td>
-              </tr>
-              <tr>
-                <td><small>user_type:</small></td>
-                <td><b>${marker.user_type}</b></td>
-              </tr>
-              <tr>
-                <td><small>legit:</small></td>
-                <td><b>${marker.legit == 0 ? "true" : "false"}</b></td>
-              </tr>
-              <tr>
-                <td><small>company_name:</small></td>
-                <td><b>${marker.company_name}</b></td>
-              </tr>
-              <tr>
-                <td><small>item_name:</small></td>
-                <td><b>${marker.item_name}</b></td>
-              </tr>
-            </table>
+            <div>
+              <p>
+                <small>createdAt:</small><br/>
+                <b>${marker.createdAt}</b>
+              </p>
+              <p>
+                <small>user_name:</small><br/>
+                <b>${marker.user_name}</b>
+              </p>
+              <p>
+                <small>user_type:</small><br/>
+                <b>${marker.user_type}</b>
+              </p>
+              <p>
+                <small>legit:</small><br/>
+                <b>${marker.legit == 0 ? "true" : "false"}</b>
+              </p>
+              <p>
+                <small>company_name:</small><br/>
+                <b>${marker.company_name}</b>
+              </p>
+              <p>
+                <small>item_name:</small><br/>
+                <b>${marker.item_name}</b>
+              </p>
+            </div>
           `)
           markerClusterGroup.addLayer(m);
         })
@@ -378,9 +437,41 @@
 
         sectionLayer.addData(geojson);
         sectionLayer.bindPopup(() => `
-          <small>metric by</small><br>
-          <b>${ this.metric}</b><br>
-          ${this.metrics.map(m => `${Math.round(m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0) * 100)}% ${m.value} <small>(${m.sum})</small>`).join('<br>')}
+          <h3>${this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0)} <small>scans</small></h3>
+          <small>metric by</small> <b>${this.metric}</b>
+          <div class="metrics">
+            <div>
+              ${
+          this.metrics.map(
+            m =>
+              `<div>
+                <span style="
+                  height:${
+              Math.round(
+                m.sum / this.metrics.reduce(
+                  (total, m) => (1 * total + 1 * m.sum),
+                  0
+                ) * 100
+              )
+              }%;
+                  background: ${([
+                    "indianred",
+                    "darkorange",
+                    "gold",
+                    "limegreen",
+                    "dodgerblue",
+                  ])[Math.min(4, Math.floor((m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0)) * 5))]}
+                  ">
+                </span>
+                  ${
+              Math.round(m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0) * 10000) / 100
+              }%
+              </div>
+              ${m.value}
+              <small>(${m.sum})</small>
+            `).join('</div><div>')}
+            </div>
+          </div>
         `)
         sectionLayer.addTo(mymap)
         sectionLayer.openPopup()

@@ -70,10 +70,14 @@ try {
     for ($i = 0; $i < max(0, min(100000, intval($_GET["insert_scans"]))); $i++) {
       $lat = 9 + round(-2 * 1000 + rand(0, 4 * 1000)) / 1000;
       $lng = -3 + round(-1 * 1000 + rand(0, 2 * 1000)) / 1000;
-      $userId = rand(1, 3);
-      $companyId = rand(1, 3);
-      $itemId = rand(1, 3);
-      $legit = rand(0, 1);
+      $userId = 1;
+      // $userId = rand(1, 3);
+      $companyId = 1;
+      // $companyId = rand(1, 3);
+      $itemId = 1;
+      // $itemId = rand(1, 3);
+      $legit = 1;
+      // $legit = rand(0, 1);
       $timestamp = mt_rand($start, $end);
       $createdAt = date("Y-m-d", $timestamp);
       $write->execute();
