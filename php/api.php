@@ -168,7 +168,7 @@ try {
           " . (isset($_GET["user_type"]) && $_GET["user_type"] != "" ? '' : '# ') . " AND users.type = :user_type
           " . (isset($_GET["item_name"]) && $_GET["item_name"] != "" ? '' : '# ') . " AND item.name = :item_name
           # AND scans.createdAt BETWEEN :from AND :to
-        LIMIT 25000
+        LIMIT 50000
       ");
       } else {
         $read = $db->prepare("
@@ -184,7 +184,7 @@ try {
           LEFT JOIN company ON scans.companyId = company.id
           LEFT JOIN users ON scans.userId = users.id
           LEFT JOIN item ON scans.itemId = item.id
-          LIMIT 25000
+          LIMIT 50000
         ");
       }
       // $read = $db->prepare("SELECT ST_AsGeojson(point) AS geojson, ROUND(ST_Distance_Sphere(point, POINT(45, 0))) / 1000 AS dist FROM scans WHERE ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((44 -1, 44 1, 46 1, 44 -1))'), point) ORDER BY dist");

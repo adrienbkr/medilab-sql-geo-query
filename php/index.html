@@ -210,6 +210,13 @@
   <div id="app">
     <div class="loader" v-if="loading.markers || loading.sections"></div>
     <span>
+      <label>Active filters</label>
+      <select v-bind:disabled="loading.markers == true" v-model="no_polygon">
+        <option value="true">no</option>
+        <option value="false">yes</option>
+      </select>
+    </span>
+    <span>
       <label>user_type</label>
       <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="user_type">
         <option value="">all</option>
@@ -251,13 +258,6 @@
         <option value="item.name">item.name</option>
         <option value="company.name">company.name</option>
         <option value="users.type">users.type</option>
-      </select>
-    </span>
-    <span>
-      <label>geo filter</label>
-      <select v-bind:disabled="loading.markers == true" v-model="no_polygon">
-        <option value="true">no geo filter</option>
-        <option value="false">filter by polygon</option>
       </select>
     </span>
   </div>
@@ -320,16 +320,22 @@
       zoom() {
         console.log(this.zoom);
         if (this.no_polygon == "true" || this.zoom > 8) {
-          if (!this.isVisible.clusters) this.renderCluster()
+          markerClusterGroup.closePopup()
+          if (!this.isVisible.clusters)
+            this.renderCluster()
         } else {
+          markerClusterGroup.openPopup()
           this.clearClusters()
         }
       },
       markers() {
         this.loading.markers = false
         if (this.no_polygon == "true" || this.zoom > 8) {
-          if (!this.isVisible.clusters) this.renderCluster()
+          markerClusterGroup.closePopup()
+          if (!this.isVisible.clusters)
+            this.renderCluster()
         } else {
+          markerClusterGroup.openPopup()
           this.clearClusters()
         }
       },
@@ -363,6 +369,13 @@
           no_polygon: this.no_polygon,
           metric: this.metric
         }
+      },
+      markerByItems() {
+        return this.markers.reduce((acc, m) => {
+          acc[m.item_name] = acc[m.item_name] || []
+          acc[m.item_name].push(m)
+          return acc
+        }, [])
       }
     },
     methods: {
@@ -372,6 +385,7 @@
       clearClusters() {
         console.log('clearClusters', markerClusterGroup);
         markerClusterGroup.clearLayers()
+        mymap.removeLayer(markerClusterGroup)
         this.isVisible.clusters = false
       },
       renderCluster() {
@@ -419,6 +433,7 @@
         console.log('clearSections');
         sectionLayer.closePopup()
         sectionLayer.clearLayers()
+        mymap.removeLayer(sectionLayer)
         this.isVisible.sections = false
       },
       renderSections() {
