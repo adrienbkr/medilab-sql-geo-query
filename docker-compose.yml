@@ -4,15 +4,22 @@ version: '3'
 
 services:
   database:
-    image: mysql:5.7
+    image: postgres
     container_name: database
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: meditect
-      MYSQL_USER: meditect
-      MYSQL_PASSWORD: meditect
+      # POSTGRES_ROOT_PASSWORD: root
+      POSTGRES_DB: meditect
+      POSTGRES_USER: meditect
+      POSTGRES_PASSWORD: meditect
     ports:
-      - "9906:3306"
+      - "9906:5432"
+      # - "9906:3306"
+
+  adminer:
+    image: adminer
+    ports:
+      - 8888:8080
+
   web:
     build: .
     container_name: php_web
