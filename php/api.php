@@ -7,13 +7,16 @@ try {
 
   // CONF
   $host = "database";
-  $port = 3306;
+  $port = 5432; //3306;
   $database = "meditect";
   $user = "meditect";
   $pass = "meditect";
 
   // CONNECT DB
-  $db = new PDO("mysql:host=$host;port=$port;dbname=$database", $user, $pass);
+  // mysql
+  // $db = new PDO("mysql:host=$host;port=$port;dbname=$database", $user, $pass);
+  // pgsql
+  $db = new PDO("pgsql:host=$host;port=$port;dbname=$database", $user, $pass);
 
   // // MODEL
   $model = $db->prepare("CREATE TABLE scans (
@@ -81,22 +84,34 @@ try {
       $timestamp = mt_rand($start, $end);
       $createdAt = date("Y-m-d", $timestamp);
       $write->execute();
+      echo $db->lastInsertId('stocks_id_seq') . "\n";
+      echo $i;
     }
     echo date(DATE_ATOM, time()) . " > insert scans : DONE <br>";
     return;
   }
 
   // READ
-
   $readSections = $db->prepare("
     SELECT 
-      name, 
-      ST_AsGeojson(polygon) AS geojson,
-      ST_AsText(polygon) AS polygon
+      name,
+      ST_AsGeojson(polygon) AS geojson
     FROM sections
   ");
   $readSections->execute();
   $rowsSections = $readSections->fetchAll(PDO::FETCH_OBJ);
+
+  if (!isset($_GET["route"])) {
+    echo  "•••              ••\n";
+    echo  " ••              ••\n";
+    echo  " ••         ••   ••\n";
+    echo  " ••         ••   ••\n";
+    echo  " •• ••           ••\n";
+    echo  " •••••••    ••     \n";
+    echo  " ••   ••    ••   ••\n";
+    echo  "•••   •••  •••   ••\n";
+    return;
+  }
 
   switch ($_GET["route"]) {
 
@@ -105,7 +120,7 @@ try {
       $readMetrics = $db->prepare("
         SELECT
           count(scans.id) as sum,
-          ". $metric ." as value
+          " . $metric . " as value
         FROM scans
         LEFT JOIN company ON scans.companyId = company.id
         LEFT JOIN users ON scans.userId = users.id
@@ -116,7 +131,7 @@ try {
         " . (isset($_GET["user_type"]) && $_GET["user_type"] != "" ? '' : '# ') . " AND users.type = :user_type
         " . (isset($_GET["item_name"]) && $_GET["item_name"] != "" ? '' : '# ') . " AND item.name = :item_name
         # AND scans.createdAt BETWEEN :from AND :to
-        GROUP BY ". $metric ."
+        GROUP BY " . $metric . "
       ");
 
       // DEBUG
@@ -139,7 +154,7 @@ try {
 
       $readMetrics->execute();
       $rowsMetrics = $readMetrics->fetchAll(PDO::FETCH_OBJ);
-      
+
       echo json_encode([
         "metrics" => isset($rowsMetrics) ? $rowsMetrics : [],
         "sections" => isset($rowsSections) ? $rowsSections : []
@@ -197,12 +212,16 @@ try {
       $from = isset($_GET["from"]) ? $_GET["from"] : "2005-04-20";
       $to = isset($_GET["to"]) ? $_GET["to"] : "2015-04-20";
 
-      $read->bindParam(":legit", $legit);
-      $read->bindParam(":company_name", $company_name);
-      $read->bindParam(":user_type", $user_type);
-      $read->bindParam(":item_name", $item_name);
-      $read->bindParam(":from", $from);
-      $read->bindParam(":to", $to);
+      if(isset($_GET["legit"]))
+        $read->bindParam(":legit", $legit);
+      if(isset($_GET["company_name"]))
+        $read->bindParam(":company_name", $company_name);
+      if(isset($_GET["user_type"]))
+        $read->bindParam(":user_type", $user_type);
+      if(isset($_GET["item_name"]))
+        $read->bindParam(":item_name", $item_name);
+      // $read->bindParam(":from", $from);
+      // $read->bindParam(":to", $to);
 
       // print_r($polygon);
       // return;

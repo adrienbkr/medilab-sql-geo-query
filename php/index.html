@@ -318,7 +318,6 @@
     },
     watch: {
       zoom() {
-        console.log(this.zoom);
         if (this.no_polygon == "true" || this.zoom > 8) {
           markerClusterGroup.closePopup()
           if (!this.isVisible.clusters)
@@ -349,7 +348,6 @@
         this.getMarkers()
       },
       no_polygon() {
-        console.log(this.no_polygon);
         if (this.no_polygon == "false") {
           this.renderSections()
         } else {
@@ -383,13 +381,11 @@
         this.zoom = mymap.getZoom()
       },
       clearClusters() {
-        console.log('clearClusters', markerClusterGroup);
         markerClusterGroup.clearLayers()
         mymap.removeLayer(markerClusterGroup)
         this.isVisible.clusters = false
       },
       renderCluster() {
-        console.log('renderCluster');
         if (!this.markers) return
         this.loading.markers = true
         this.clearClusters()
@@ -430,14 +426,12 @@
         this.loading.markers = false
       },
       clearSections() {
-        console.log('clearSections');
         sectionLayer.closePopup()
         sectionLayer.clearLayers()
         mymap.removeLayer(sectionLayer)
         this.isVisible.sections = false
       },
       renderSections() {
-        console.log('renderSections');
         if (!this.sections) return
         this.clearSections()
         const geojson = {
@@ -447,7 +441,6 @@
         };
 
         const sectionGeo = JSON.parse(this.sections[1].geojson)
-        console.log(sectionGeo);
         sectionGeo.coordinates[0].forEach((coord, index) => {
           const coordTmp = [...coord]
           sectionGeo.coordinates[0][index][0] = coordTmp[1]
@@ -498,7 +491,6 @@
         this.isVisible.sections = true
       },
       getSections() {
-        console.log('getSections');
         this.loading.sections = true
         axios
           .get('/api.php', { params: { route: "sections", ...this.params } })
@@ -509,7 +501,6 @@
           .catch(console.warn)
       },
       getMarkers() {
-        console.log('getMarkers');
         this.loading.markers = true
         axios.get('/api.php', { params: { route: "scans", ...this.params } })
           .then(response => { this.markers = response.data.scans })
