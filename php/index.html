@@ -210,15 +210,8 @@
   <div id="app">
     <div class="loader" v-if="loading.markers || loading.sections"></div>
     <span>
-      <label>Active filters</label>
-      <select v-bind:disabled="loading.markers == true" v-model="no_polygon">
-        <option value="true">no</option>
-        <option value="false">yes</option>
-      </select>
-    </span>
-    <span>
-      <label>user_type</label>
-      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="user_type">
+      <label>user_role</label>
+      <select v-bind:disabled="loading.markers == true" v-model="user_role">
         <option value="">all</option>
         <option value="pharmacy">pharmacy</option>
         <option value="patient">patient</option>
@@ -226,16 +219,17 @@
       </select>
     </span>
     <span>
-      <label>legit</label>
-      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="legit">
+      <label>status</label>
+      <select v-bind:disabled="loading.markers == true" v-model="status">
         <option value="">all</option>
-        <option value="0">false</option>
-        <option value="1">true</option>
+        <option value="legit">legit</option>
+        <option value="warning">warning</option>
+        <option value="unlegit">unlegit</option>
       </select>
     </span>
     <span>
       <label>company_name</label>
-      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="company_name">
+      <select v-bind:disabled="loading.markers == true" v-model="company_name">
         <option value="">all</option>
         <option value="upsa">upsa</option>
         <option value="biogaran">biogaran</option>
@@ -243,8 +237,8 @@
       </select>
     </span>
     <span>
-      <label>item_name</label>
-      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="item_name">
+      <label>product_name</label>
+      <select v-bind:disabled="loading.markers == true" v-model="product_name">
         <option value="">all</option>
         <option value="efferalgan">efferalgan</option>
         <option value="doliprane">doliprane</option>
@@ -253,11 +247,11 @@
     </span>
     <span>
       <label>metric</label>
-      <select v-bind:disabled="no_polygon == 'true' || loading.markers == true" v-model="metric">
-        <option value="scans.legit">scans.legit</option>
-        <option value="item.name">item.name</option>
-        <option value="company.name">company.name</option>
-        <option value="users.type">users.type</option>
+      <select v-bind:disabled="loading.markers == true" v-model="metric">
+        <option value="scans.status">scan status</option>
+        <option value="product.name">product name</option>
+        <option value="company.name">company name</option>
+        <option value="users.role">user role</option>
       </select>
     </span>
   </div>
@@ -278,7 +272,7 @@
     tileSize: 512,
     zoomOffset: -1
   })
-    .addTo(mymap);
+    .addTo(mymap)
 
   const markerClusterGroup = L.markerClusterGroup();
   const sectionLayer = L.geoJSON();
@@ -299,86 +293,82 @@
       markers: [],
       sections: [],
       metrics: [],
-      init: false,
-      user_type: "",
-      legit: "",
+      user_role: "",
+      status: "",
       company_name: "",
-      item_name: "",
+      product_name: "",
       from: "2005-04-20",
       to: "2015-04-20",
-      no_polygon: "false",
-      metric: "users.type",
-      zoom: null
+      metric: "scans.status",
+      zoom: null,
+      boundBox: {}
     },
     beforeMount() {
-      this.getSections();
-      this.getMarkers();
-      mymap.on('zoomend', this.onZoomend)
       this.zoom = mymap.getZoom()
+      this.boundBox = mymap.getBounds()
+
+      mymap.addEventListener('zoomend', this.onZoomend)
+      mymap.addEventListener('moveend', this.onMoveend)
+      mymap.addEventListener('click', this.onClick);
+
+      this.getSections();
+      this.getMetrics()
     },
     watch: {
-      zoom() {
-        if (this.no_polygon == "true" || this.zoom > 8) {
-          markerClusterGroup.closePopup()
-          if (!this.isVisible.clusters)
-            this.renderCluster()
-        } else {
-          markerClusterGroup.openPopup()
-          this.clearClusters()
-        }
-      },
-      markers() {
-        this.loading.markers = false
-        if (this.no_polygon == "true" || this.zoom > 8) {
-          markerClusterGroup.closePopup()
-          if (!this.isVisible.clusters)
-            this.renderCluster()
-        } else {
-          markerClusterGroup.openPopup()
-          this.clearClusters()
-        }
-      },
-      sections() {
-        this.loading.sections = false
-        if (this.no_polygon == "false")
-          this.renderSections()
-      },
-      params() {
-        this.getSections();
+      boundBox() {
         this.getMarkers()
       },
-      no_polygon() {
-        if (this.no_polygon == "false") {
-          this.renderSections()
-        } else {
-          this.clearSections()
-        }
+      zoom() {
+        this.getSections();
+      },
+      markers() {
+        this.renderCluster()
+      },
+      sections() {
+        this.renderSections()
+      },
+      params() {
+        this.getMarkers()
+        this.getMetrics()
       }
     },
     computed: {
       params() {
         return {
-          user_type: this.user_type,
-          legit: this.legit,
+          user_role: this.user_role,
+          status: this.status,
           company_name: this.company_name,
-          item_name: this.item_name,
+          product_name: this.product_name,
           from: this.from,
           to: this.to,
-          no_polygon: this.no_polygon,
-          metric: this.metric
+          metric: this.metric,
+          neLat: this.boundBox._northEast && this.boundBox._northEast.lat,
+          neLng: this.boundBox._northEast && this.boundBox._northEast.lng,
+          swLat: this.boundBox._southWest && this.boundBox._southWest.lat,
+          swLng: this.boundBox._southWest && this.boundBox._southWest.lng
         }
       },
-      markerByItems() {
-        return this.markers.reduce((acc, m) => {
-          acc[m.item_name] = acc[m.item_name] || []
-          acc[m.item_name].push(m)
+      metricsBySections () {
+        console.log('metricsBySections', this.metrics);
+        const reduce = this.metrics.reduce((acc, metric) => {
+          console.log(metric);
+          acc[metric.name] = acc[metric.name] || {}
+          acc[metric.name][metric.metricType] = acc[metric.name].metricValue
           return acc
-        }, [])
+        }, {})
+        console.log(reduce);
+        return reduce
       }
     },
     methods: {
       onZoomend() {
         this.zoom = mymap.getZoom()
+      },
+      onMoveend() {
+        this.boundBox = mymap.getBounds()
+      },
+      onClick(e) {
+        console.log(e.latlng);
       },
       clearClusters() {
         markerClusterGroup.clearLayers()
@@ -395,27 +385,27 @@
             <div>
               <p>
                 <small>createdAt:</small><br/>
-                <b>${marker.createdAt}</b>
+                <b>${Date.parse(marker.created_at)}</b>
               </p>
               <p>
                 <small>user_name:</small><br/>
                 <b>${marker.user_name}</b>
               </p>
               <p>
-                <small>user_type:</small><br/>
-                <b>${marker.user_type}</b>
+                <small>user_role:</small><br/>
+                <b>${marker.user_role}</b>
               </p>
               <p>
-                <small>legit:</small><br/>
-                <b>${marker.legit == 0 ? "true" : "false"}</b>
+                <small>status:</small><br/>
+                <b>${marker.status}</b>
               </p>
               <p>
                 <small>company_name:</small><br/>
                 <b>${marker.company_name}</b>
               </p>
               <p>
-                <small>item_name:</small><br/>
-                <b>${marker.item_name}</b>
+                <small>product_name:</small><br/>
+                <b>${marker.product_name}</b>
               </p>
             </div>
           `)
@@ -440,70 +430,92 @@
           properties: { sections: this.sections }
         };
 
-        const sectionGeo = JSON.parse(this.sections[1].geojson)
-        sectionGeo.coordinates[0].forEach((coord, index) => {
-          const coordTmp = [...coord]
-          sectionGeo.coordinates[0][index][0] = coordTmp[1]
-          sectionGeo.coordinates[0][index][1] = coordTmp[0]
+        this.sections.forEach(section => {
+          const sectionGeo = JSON.parse(section.geojson)
+          sectionGeo.coordinates[0].forEach((coord, index) => {
+            const coordTmp = [...coord]
+            sectionGeo.coordinates[0][index][0] = coordTmp[1]
+            sectionGeo.coordinates[0][index][1] = coordTmp[0]
+          })
+          geojson.features.push({
+            ...sectionGeo,
+            properties: {
+              name: section.name
+            }
+          })
         })
-        geojson.features.push(sectionGeo)
 
         sectionLayer.addData(geojson);
-        sectionLayer.bindPopup(() => `
+        sectionLayer.bindPopup((e) => {
+          console.log(e.feature.geometry.properties);
+          console.log(this.metricsBySections);
+          return `
+          <h2>${e.feature.geometry.properties.name}</h2>
           <h3>${this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0)} <small>scans</small></h3>
           <small>metric by</small> <b>${this.metric}</b>
           <div class="metrics">
             <div>
               ${
-          this.metrics.map(
-            m =>
-              `<div>
+            this.metrics.map(
+              m =>
+                `<div>
                 <span style="
                   height:${
-              Math.round(
-                m.sum / this.metrics.reduce(
-                  (total, m) => (1 * total + 1 * m.sum),
-                  0
-                ) * 100
-              )
-              }%;
+                Math.round(
+                  m.sum / this.metrics.reduce(
+                    (total, m) => (1 * total + 1 * m.sum),
+                    0
+                  ) * 100
+                )
+                }%;
                   background: ${([
-                    "indianred",
-                    "darkorange",
-                    "gold",
-                    "limegreen",
-                    "dodgerblue",
-                  ])[Math.min(4, Math.floor((m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0)) * 5))]}
+                  "indianred",
+                  "darkorange",
+                  "gold",
+                  "limegreen",
+                  "dodgerblue",
+                ])[Math.min(4, Math.floor((m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0)) * 5))]}
                   ">
                 </span>
                   ${
-              Math.round(m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0) * 10000) / 100
-              }%
+                Math.round(m.sum / this.metrics.reduce((total, m) => (1 * total + 1 * m.sum), 0) * 10000) / 100
+                }%
               </div>
               ${m.value}
               <small>(${m.sum})</small>
             `).join('</div><div>')}
             </div>
           </div>
-        `)
+        `})
         sectionLayer.addTo(mymap)
-        sectionLayer.openPopup()
+        // sectionLayer.openPopup()
         this.isVisible.sections = true
+        this.loading.sections = false
       },
       getSections() {
         this.loading.sections = true
         axios
           .get('/api.php', { params: { route: "sections", ...this.params } })
           .then(response => {
-            this.metrics = response.data.metrics
             this.sections = response.data.sections
+          })
+          .catch(console.warn)
+      },
+      getMetrics() {
+        this.loading.sections = true
+        axios
+          .get('/api.php', { params: { route: "metrics", ...this.params } })
+          .then(response => {
+            this.metrics = response.data.metrics
           })
           .catch(console.warn)
       },
       getMarkers() {
         this.loading.markers = true
-        axios.get('/api.php', { params: { route: "scans", ...this.params } })
-          .then(response => { this.markers = response.data.scans })
+        axios.get('/api.php', { params: { route: "scans", ...this.params, } })
+          .then(response => {
+            this.markers = response.data.scans
+          })
           .catch(console.warn)
       }
     }
