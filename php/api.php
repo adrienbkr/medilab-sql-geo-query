@@ -5,15 +5,8 @@ ini_set('display_errors', 'On');
 
 try {
 
-  // CONF
-  $host = "database";
-  $port = 5432;;
-  $database = "meditect";
-  $user = "meditect";
-  $pass = "meditect";
-
-  // CONNECT DB
-  $db = new PDO("pgsql:host=$host;port=$port;dbname=$database", $user, $pass);
+  // connect db with pdo
+  require_once("./db.php");
 
   // WRITE
   if (isset($_GET["insert_scans"]) && intval($_GET["insert_scans"])) {
@@ -59,9 +52,9 @@ try {
 
       $readSections = $db->prepare("
         SELECT
-        sections.name,
-        ST_ASGEOJSON(sections.geog) as geojson
-        FROM sections
+        geographies.name,
+        ST_ASGEOJSON(geographies.geog) as geojson
+        FROM geographies
       ");
 
       $readSections->execute();
