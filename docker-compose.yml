@@ -34,8 +34,9 @@ services:
 
   nuxt:
     build: ./app/
-    container_name: nuxt
-    restart: always
+    container_name: nuxt      
+    volumes:
+      - ./app/:/src
     ports:
       - "3000:3000"
     command:
