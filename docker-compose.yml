@@ -31,23 +31,3 @@ services:
       - "8101:80"
     stdin_open: true
     tty: true
-
-  nuxt:
-    build: ./app/
-    container_name: nuxt      
-    volumes:
-      - ./app/:/src
-    ports:
-      - "3000:3000"
-    command:
-      "npm run start"
-
-  nginx:
-    image: nginx:1.13
-    container_name: nginx
-    ports:
-      - "8100:80"
-    volumes:
-      - ./nginx:/etc/nginx/conf.d
-    depends_on:
-      - nuxt
