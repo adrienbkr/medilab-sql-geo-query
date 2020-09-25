@@ -60,8 +60,15 @@ try {
       gid serial PRIMARY KEY,
       name varchar,
       geog geography(POINT),
-      potentiel numeric NULL,
-      updated_at timestamp NULL
+      updated_at timestamp NULL,
+      turnover_daily numeric NULL,
+      frequency_daily numeric NULL,
+      cart_avg numeric NULL,
+      surface numeric NULL,
+      employee numeric NULL,
+      showcase numeric NULL,
+      counters numeric NULL,
+      environment varchar NULL
     )");
 
   // $db->exec("
@@ -242,8 +249,15 @@ try {
   foreach ($pharmacies as $key => $pharma) {
     $pharmacies[$key]->name = "'{$pharmacies[$key]->name}'";
     $pharmacies[$key]->geog = "'POINT(" . $pharma->location->latitude . " " . $pharma->location->longitude . ")'";
-    $pharmacies[$key]->potentiel = "NULL";
     $pharmacies[$key]->updated_at = "NULL";
+    $pharmacies[$key]->turnover_daily = "NULL";
+    $pharmacies[$key]->frequency_daily = "NULL";
+    $pharmacies[$key]->cart_avg = "NULL";
+    $pharmacies[$key]->surface = "NULL";
+    $pharmacies[$key]->employee = "NULL";
+    $pharmacies[$key]->showcase = "NULL";
+    $pharmacies[$key]->counters = "NULL";
+    $pharmacies[$key]->environment = "NULL";
   }
 
   // print_r($pharmacies);
@@ -253,16 +267,19 @@ try {
   foreach ($pharmacies as $key => $pharma) {
     foreach ($annuaire as $keyAnn => $ann) {
       if (strpos($pharma->name, $ann->Pharmacie)) {
-        $pharmacies[$key]->potentiel = $ann->Potentiel;
-        $pharmacies[$key]->updated_at = "'".date('c', strtotime($ann->Passage))."'";
-        // $pharmacies[$key]->turnover_daily = $ann->["CA (quotidien)"];
-        // $pharmacies[$key]->frequency_daily = $ann->["Fréquentation"];
-        // $pharmacies[$key]->cart_avg = $ann->["Panier moyen"];
-        // $pharmacies[$key]->surface = $ann->Superficie;
-        // $pharmacies[$key]->employee = $ann->Effectif;
-        // $pharmacies[$key]->showcase = $ann->Vitrines;
-        // $pharmacies[$key]->counters = $ann->["Comptoirs blocs"];
-        // $pharmacies[$key]->environment = $ann->Environnement;
+        $pharmacies[$key]->updated_at = "'".date('c', strtotime($ann->updated_at))."'";
+        $pharmacies[$key]->turnover_daily = $ann->turnover_daily != "" ? $ann->turnover_daily : "NULL";
+        $pharmacies[$key]->frequency_daily = $ann->frequency_daily != "" ? $ann->frequency_daily : "NULL";
+        $pharmacies[$key]->cart_avg = $ann->cart_avg != "" ? $ann->cart_avg : "NULL";
+        $pharmacies[$key]->surface = $ann->surface != "" ? $ann->surface : "NULL";
+        $pharmacies[$key]->employee = $ann->employee != "" ? $ann->employee : "NULL";
+        $pharmacies[$key]->showcase = $ann->showcase != "" ? $ann->showcase : "NULL";
+        $pharmacies[$key]->counters = $ann->counters != "" ? $ann->counters : "NULL";
+        $pharmacies[$key]->environment = $ann->environment != "" ? "'".$ann->environment."'"  : "NULL";
+        // echo "<pre>";
+        // print_r($pharmacies[$key]);
+        // echo "</pre>";
+        // echo "<br>";
         break;
       }
     }
@@ -281,26 +298,31 @@ try {
       INSERT INTO pharmacies (
         name,
         geog,
-        potentiel,
-        updated_at
+        updated_at,
+        turnover_daily,
+        frequency_daily,
+        cart_avg,
+        surface,
+        employee,
+        showcase,
+        counters,
+        environment
       ) VALUES (
         {$pharmacy->name},
         ST_PointFromText({$pharmacy->geog}),
-        {$pharmacy->potentiel},
-        {$pharmacy->updated_at}
+        {$pharmacy->updated_at},
+        {$pharmacy->turnover_daily},
+        {$pharmacy->frequency_daily},
+        {$pharmacy->cart_avg},
+        {$pharmacy->surface},
+        {$pharmacy->employee},
+        {$pharmacy->showcase},
+        {$pharmacy->counters},
+        {$pharmacy->environment}
       )");
-    // echo ("
-    //   INSERT INTO pharmacies (
-    //     name,
-    //     geog,
-    //     potentiel,
-    //     updated_at
-    //   ) VALUES (
-    //     {$pharmacy->name},
-    //     ST_PointFromText({$pharmacy->geog}),
-    //     {$pharmacy->potentiel},
-    //     {$pharmacy->updated_at}
-    //   )");
+    // echo "<pre>";
+    // print_r($pharmacy);
+    // echo "</pre>";
     // echo "<br>";
     $ci++;
   }

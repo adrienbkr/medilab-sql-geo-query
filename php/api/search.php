@@ -11,10 +11,39 @@ try {
   // build query
   $search = $db->prepare("
     SELECT
-      pharmacies.gid as id,
-      pharmacies.potentiel as pot,
+      pharmacies.gid as gid,
       pharmacies.name as name,
       pharmacies.updated_at as updated_at,
+      pharmacies.turnover_daily as turnover_daily,
+      pharmacies.frequency_daily as frequency_daily,
+      pharmacies.cart_avg as cart_avg,
+      pharmacies.surface as surface,
+      pharmacies.employee as employee,
+      pharmacies.showcase as showcase,
+      pharmacies.counters as counters,
+      pharmacies.environment as environment,
+      (
+        (
+          CASE WHEN frequency_daily IS NULL
+          THEN 0
+          ELSE CEIL((frequency_daily + 1) / 100) END
+        ) +
+        (
+          CASE WHEN cart_avg IS NULL
+          THEN 0
+          ELSE CEIL((cart_avg + 1) / 1000) END
+        ) +
+        (
+          CASE WHEN employee IS NULL
+          THEN 0
+          ELSE CEIL((employee + 1) / 5) END
+        ) +
+        (
+          CASE WHEN surface IS NULL
+          THEN 0
+          ELSE CEIL((surface + 1) / 100) END
+        )
+      ) as potentiel,
       geographies.name as section,
       ST_ASGEOJSON(pharmacies.geog) as geojson
     FROM pharmacies
@@ -22,13 +51,17 @@ try {
       AND geographies.type = 'section'
     WHERE LOWER(pharmacies.name) LIKE LOWER('%{$_GET['search']}%')
       OR LOWER(geographies.name) LIKE LOWER('%{$_GET['search']}%')
-    ORDER BY section, name
+    ORDER BY potentiel
+    DESC
   ");
 
   // exec query
   $search->execute();
   // fetch all rows
   $rows = $search->fetchAll(PDO::FETCH_OBJ);
+  foreach ($rows as $key => $row) {
+    $rows[$key]->geojson = json_decode($row->geojson);
+  }
   // status res 200
   http_response_code(200);
   // send res
