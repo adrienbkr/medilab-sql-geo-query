@@ -1,5 +1,4 @@
 <?php
-
 try {
   // set header 
   header("Access-Control-Allow-Origin: *");
@@ -55,6 +54,10 @@ try {
   $search->execute();
   // fetch all rows
   $rows = $search->fetchAll(PDO::FETCH_OBJ);
+  // convert geojson
+  foreach ($rows as $key => $row) {
+    $rows[$key]->geojson = json_decode($row->geojson);
+  }
   // status res 200
   http_response_code(200);
   // send res

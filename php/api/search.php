@@ -59,6 +59,7 @@ try {
   $search->execute();
   // fetch all rows
   $rows = $search->fetchAll(PDO::FETCH_OBJ);
+  // convert geojson
   foreach ($rows as $key => $row) {
     $rows[$key]->geojson = json_decode($row->geojson);
   }
