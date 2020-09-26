@@ -20,6 +20,10 @@ try {
       pharmacies.employee as employee,
       pharmacies.showcase as showcase,
       pharmacies.counters as counters,
+      pharmacies.address as address,
+      pharmacies.phone as phone,
+      pharmacies.opening as opening,
+      pharmacies.photo as photo,
       pharmacies.environment as environment,
       (
         (
@@ -42,7 +46,7 @@ try {
           THEN 0
           ELSE CEIL((surface + 1) / 100) END
         )
-      ) as pot,
+      ) as potentiel,
       geographies.name as section,
       ST_ASGEOJSON(pharmacies.geog) as geojson
     FROM pharmacies

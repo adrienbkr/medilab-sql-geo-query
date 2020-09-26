@@ -68,7 +68,11 @@ try {
       employee numeric NULL,
       showcase numeric NULL,
       counters numeric NULL,
-      environment varchar NULL
+      environment varchar NULL,
+      address varchar NULL,
+      phone varchar NULL,
+      opening varchar NULL,
+      photo varchar NULL
     )");
 
   // $db->exec("
@@ -244,7 +248,7 @@ try {
   // }
 
   // pharmacies
-  $json = file_get_contents("./export/phs.json");
+  $json = file_get_contents("./export/phs4.json");
   $pharmacies = json_decode($json);
   foreach ($pharmacies as $key => $pharma) {
     $pharmacies[$key]->name = "'{$pharmacies[$key]->name}'";
@@ -258,6 +262,10 @@ try {
     $pharmacies[$key]->showcase = "NULL";
     $pharmacies[$key]->counters = "NULL";
     $pharmacies[$key]->environment = "NULL";
+    $pharmacies[$key]->address = $pharmacies[$key]->address != "" ? "'{$pharmacies[$key]->address}'" : "NULL";
+    $pharmacies[$key]->phone = $pharmacies[$key]->phone != "" ? "'{$pharmacies[$key]->phone}'" : "NULL";
+    $pharmacies[$key]->opening = $pharmacies[$key]->opening != "" ? "'{$pharmacies[$key]->opening}'" : "NULL";
+    $pharmacies[$key]->photo = $pharmacies[$key]->photo != "" ? "'{$pharmacies[$key]->photo}'" : "NULL";
   }
 
   // print_r($pharmacies);
@@ -267,7 +275,7 @@ try {
   foreach ($pharmacies as $key => $pharma) {
     foreach ($annuaire as $keyAnn => $ann) {
       if (strpos($pharma->name, $ann->Pharmacie)) {
-        $pharmacies[$key]->updated_at = "'".date('c', strtotime($ann->updated_at))."'";
+        $pharmacies[$key]->updated_at = "'" . date('c', strtotime($ann->updated_at)) . "'";
         $pharmacies[$key]->turnover_daily = $ann->turnover_daily != "" ? $ann->turnover_daily : "NULL";
         $pharmacies[$key]->frequency_daily = $ann->frequency_daily != "" ? $ann->frequency_daily : "NULL";
         $pharmacies[$key]->cart_avg = $ann->cart_avg != "" ? $ann->cart_avg : "NULL";
@@ -275,7 +283,7 @@ try {
         $pharmacies[$key]->employee = $ann->employee != "" ? $ann->employee : "NULL";
         $pharmacies[$key]->showcase = $ann->showcase != "" ? $ann->showcase : "NULL";
         $pharmacies[$key]->counters = $ann->counters != "" ? $ann->counters : "NULL";
-        $pharmacies[$key]->environment = $ann->environment != "" ? "'".$ann->environment."'"  : "NULL";
+        $pharmacies[$key]->environment = $ann->environment != "" ? "'" . $ann->environment . "'"  : "NULL";
         // echo "<pre>";
         // print_r($pharmacies[$key]);
         // echo "</pre>";
@@ -306,7 +314,11 @@ try {
         employee,
         showcase,
         counters,
-        environment
+        environment,
+        address,
+        phone,
+        opening,
+        photo
       ) VALUES (
         {$pharmacy->name},
         ST_PointFromText({$pharmacy->geog}),
@@ -318,7 +330,11 @@ try {
         {$pharmacy->employee},
         {$pharmacy->showcase},
         {$pharmacy->counters},
-        {$pharmacy->environment}
+        {$pharmacy->environment},
+        {$pharmacy->address},
+        {$pharmacy->phone},
+        {$pharmacy->opening},
+        {$pharmacy->photo}
       )");
     // echo "<pre>";
     // print_r($pharmacy);
