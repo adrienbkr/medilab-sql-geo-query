@@ -7,9 +7,10 @@ try {
   // build query
   $read = $db->prepare("
     SELECT
-    geographies.name,
+    name,
     ST_ASGEOJSON(geographies.geog) as geojson
     FROM geographies
+    ORDER BY name
   ");
   // exec query
   $read->execute();

@@ -4,10 +4,48 @@ try {
   // set header 
   header("Access-Control-Allow-Origin: *");
   // check param
-  if (!isset($_GET['search']))
-    throw new Exception('param search is missing.');
+  if (!isset($_GET['search']) || !isset($_GET['filters']))
+    throw new Exception('not allowed');
   // connect db with pdo -> $db
   require_once("../db.php");
+
+  // parse filters
+  $filters = json_decode($_GET['filters']);
+  $queryStr = "";
+
+  // print_r($filters);
+
+  foreach ($filters as $field => $value) {
+    if ($value && $value != "")
+      switch ($field) {
+        case 'section':
+          $queryStr .= "AND geographies.name = '$value' ";
+          break;
+        case 'counters':
+        case 'showcase':
+          $queryStr .= "AND $field = $value ";
+          break;
+        case 'turnover_daily':
+        case 'frequency_daily':
+        case 'employee':
+          $values = explode('-', $value);
+          $min = $values[0];
+          $max = $values[1];
+          if ($max == "max")
+            $queryStr .= "AND $field >= $min ";
+          else if ($min == "min")
+            $queryStr .= "AND $field < $max ";
+          else
+            $queryStr .= "AND $field BETWEEN $min AND $max ";
+          break;
+        default:
+          break;
+      }
+  }
+
+  // echo $queryStr;
+  // return;
+
   // build query
   $search = $db->prepare("
     SELECT
@@ -49,8 +87,8 @@ try {
     FROM pharmacies
     INNER JOIN geographies ON ST_COVERS(geographies.geog, pharmacies.geog)
       AND geographies.type = 'section'
-    WHERE LOWER(pharmacies.name) LIKE LOWER('%{$_GET['search']}%')
-      OR LOWER(geographies.name) LIKE LOWER('%{$_GET['search']}%')
+    WHERE (LOWER(pharmacies.name) LIKE LOWER('%{$_GET['search']}%') OR LOWER(geographies.name) LIKE LOWER('%{$_GET['search']}%'))
+    {$queryStr}
     ORDER BY potentiel
     DESC
   ");
