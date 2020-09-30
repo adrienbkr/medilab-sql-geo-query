@@ -1,8 +1,15 @@
 <?php
 
+use function PHPSTORM_META\type;
+
 try {
   // set header 
   header("Access-Control-Allow-Origin: *");
+  
+  // if export csv
+  if (isset($_GET['export']))
+    header('Content-Disposition: attachment;filename="meditect-annuaire-export.csv";');
+
   // check param
   if (!isset($_GET['search']) || !isset($_GET['filters']))
     throw new Exception('not allowed');
@@ -103,8 +110,21 @@ try {
   }
   // status res 200
   http_response_code(200);
-  // send res
-  echo json_encode($rows);
+  // send res json or export csv
+  if (!isset($_GET['export']))
+    echo json_encode($rows);
+  else
+    foreach ($rows as $index => $row) {
+      $csvHeadArr = [];
+      $csvRowArr = [];
+      foreach ($row as $key => $value) {
+        if ($index == 0) $csvHeadArr[$key] = $key;
+        $csvRowArr[$key] = gettype($value) == "object" ? json_encode($value) : $value;
+      }
+
+      if ($index == 0) echo implode(",", $csvHeadArr)."\n";
+      echo implode(",", $csvRowArr)."\n";
+    }
 } catch (Exception $e) {
   // status res 500
   http_response_code(500);
